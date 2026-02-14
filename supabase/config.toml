@@ -1,0 +1,4 @@
+project_id = "mqtevvelpouprsoqszsj"
+
+[functions.eco-check]
+verify_jwt = false
