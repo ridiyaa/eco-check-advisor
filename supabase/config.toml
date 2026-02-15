@@ -2,3 +2,6 @@ project_id = "mqtevvelpouprsoqszsj"
 
 [functions.eco-check]
 verify_jwt = false
+
+[functions.advisor]
+verify_jwt = false
