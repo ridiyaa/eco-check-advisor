@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, RotateCcw, AlertTriangle } from "lucide-react";
+import { Loader2, RotateCcw, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ export function AdvisorMode({ answers, onReset }: Props) {
   const [ecoScore, setEcoScore] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({});
+  const [isFallback, setIsFallback] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const handleError = (msg: string) => {
@@ -58,6 +59,12 @@ export function AdvisorMode({ answers, onReset }: Props) {
 
       if (error) throw new Error(error.message || "Greška pri pozivu servera");
 
+      // Handle fallback mode — server returns 200 with mode:"fallback"
+      if (data?.mode === "fallback") {
+        setIsFallback(true);
+        return { content: data.content, step: data.step, fallback: true };
+      }
+
       if (data?.error) {
         if (data.error === "rate_limit") {
           handleError("Sistem je trenutno preopterećen. Pokušajte ponovo za nekoliko minuta.");
@@ -65,15 +72,14 @@ export function AdvisorMode({ answers, onReset }: Props) {
           handleError("Usluga trenutno nije dostupna. Kontaktirajte podršku.");
         } else if (data.error === "invalid_json") {
           handleError("AI nije vratio validan odgovor. Pokušajte ponovo.");
-        } else if (data.error === "upstream_5xx") {
-          handleError("AI servis je privremeno nedostupan (server greška). Pokušajte ponovo za minut.");
         } else {
           handleError("Došlo je do greške. Molimo pokušajte ponovo.");
         }
         return null;
       }
 
-      return data.content;
+      setIsFallback(false);
+      return { content: data.content, step: data.step, fallback: false };
     } catch (e) {
       if (import.meta.env.DEV) console.error("[Advisor] Error:", e);
       handleError("Došlo je do greške prilikom komunikacije sa AI savetkom. Molimo pokušajte ponovo.");
@@ -84,12 +90,26 @@ export function AdvisorMode({ answers, onReset }: Props) {
   const startAdvisor = async () => {
     setState("loading_followups");
 
-    const content = await callAdvisor("generate_followups");
-    if (!content) return;
+    const result = await callAdvisor("generate_followups");
+    if (!result) return;
 
-    const parsed = FollowUpResponseSchema.safeParse(content);
+    // Fallback mode: server skipped follow-ups and returned a full plan
+    if (result.fallback && result.step === "generate_plan") {
+      const parsed = AdvisorResponseSchema.safeParse(result.content);
+      if (!parsed.success) {
+        if (import.meta.env.DEV) console.error("[Advisor] Fallback plan parse error:", parsed.error, "Raw:", result.content);
+        handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
+        return;
+      }
+      setResult(parsed.data);
+      setState("results");
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      return;
+    }
+
+    const parsed = FollowUpResponseSchema.safeParse(result.content);
     if (!parsed.success) {
-      if (import.meta.env.DEV) console.error("[Advisor] Follow-up parse error:", parsed.error, "Raw:", content);
+      if (import.meta.env.DEV) console.error("[Advisor] Follow-up parse error:", parsed.error, "Raw:", result.content);
       handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
       return;
     }
@@ -105,12 +125,12 @@ export function AdvisorMode({ answers, onReset }: Props) {
     setFollowUpAnswers(fuAnswers);
     setState("loading_plan");
 
-    const content = await callAdvisor("generate_plan", fuAnswers, overrideScore);
-    if (!content) return;
+    const result = await callAdvisor("generate_plan", fuAnswers, overrideScore);
+    if (!result) return;
 
-    const parsed = AdvisorResponseSchema.safeParse(content);
+    const parsed = AdvisorResponseSchema.safeParse(result.content);
     if (!parsed.success) {
-      if (import.meta.env.DEV) console.error("[Advisor] Plan parse error:", parsed.error, "Raw:", content);
+      if (import.meta.env.DEV) console.error("[Advisor] Plan parse error:", parsed.error, "Raw:", result.content);
       handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
       return;
     }
@@ -188,6 +208,25 @@ export function AdvisorMode({ answers, onReset }: Props) {
 
         {state === "results" && result && (
           <div ref={resultsRef} key="results">
+            {isFallback && (
+              <Card className="mb-4 border-yellow-500/30 bg-yellow-50 dark:bg-yellow-950/20">
+                <CardContent className="py-3 px-4 flex items-center gap-3">
+                  <Info className="h-5 w-5 text-yellow-600 dark:text-yellow-400 shrink-0" />
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                    AI servis je trenutno nedostupan — prikazujemo plan iz baze znanja.
+                  </p>
+                  <Button
+                    onClick={() => { setIsFallback(false); setState("idle"); }}
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto shrink-0 gap-1"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Pokušaj AI
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             <AdvisorResults
               result={result}
               ecoScore={ecoScore}
