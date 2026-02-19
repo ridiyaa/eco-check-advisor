@@ -65,6 +65,8 @@ export function AdvisorMode({ answers, onReset }: Props) {
           handleError("Usluga trenutno nije dostupna. Kontaktirajte podršku.");
         } else if (data.error === "invalid_json") {
           handleError("AI nije vratio validan odgovor. Pokušajte ponovo.");
+        } else if (data.error === "upstream_5xx") {
+          handleError("AI servis je privremeno nedostupan (server greška). Pokušajte ponovo za minut.");
         } else {
           handleError("Došlo je do greške. Molimo pokušajte ponovo.");
         }
@@ -85,18 +87,17 @@ export function AdvisorMode({ answers, onReset }: Props) {
     const content = await callAdvisor("generate_followups");
     if (!content) return;
 
-    try {
-      const parsed = FollowUpResponseSchema.parse(content);
-      if (parsed.follow_up_questions.length > 0) {
-        setFollowUpQuestions(parsed.follow_up_questions);
-        setState("followups");
-      } else {
-        // No follow-ups needed, go directly to plan
-        await generatePlan({});
-      }
-    } catch (e) {
-      if (import.meta.env.DEV) console.error("[Advisor] Follow-up parse error:", e, content);
+    const parsed = FollowUpResponseSchema.safeParse(content);
+    if (!parsed.success) {
+      if (import.meta.env.DEV) console.error("[Advisor] Follow-up parse error:", parsed.error, "Raw:", content);
       handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
+      return;
+    }
+    if (parsed.data.follow_up_questions.length > 0) {
+      setFollowUpQuestions(parsed.data.follow_up_questions);
+      setState("followups");
+    } else {
+      await generatePlan({});
     }
   };
 
@@ -107,15 +108,15 @@ export function AdvisorMode({ answers, onReset }: Props) {
     const content = await callAdvisor("generate_plan", fuAnswers, overrideScore);
     if (!content) return;
 
-    try {
-      const parsed = AdvisorResponseSchema.parse(content);
-      setResult(parsed);
-      setState("results");
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    } catch (e) {
-      if (import.meta.env.DEV) console.error("[Advisor] Plan parse error:", e, content);
+    const parsed = AdvisorResponseSchema.safeParse(content);
+    if (!parsed.success) {
+      if (import.meta.env.DEV) console.error("[Advisor] Plan parse error:", parsed.error, "Raw:", content);
       handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
+      return;
     }
+    setResult(parsed.data);
+    setState("results");
+    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
   const handleRegenerate = async (newScore: number) => {

@@ -6,6 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MODEL = "google/gemini-3-flash-preview";
+const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MAX_ATTEMPTS = 3;
+const RETRYABLE_STATUSES = [500, 502, 503, 504];
+
 interface AdvisorRequest {
   answers: Record<string, string>;
   ecoScore: number;
@@ -19,6 +24,127 @@ interface AdvisorRequest {
   }>;
 }
 
+// --- Retry helper with exponential backoff + jitter ---
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+): Promise<{ response: Response | null; lastStatus: number }> {
+  let lastStatus = 0;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.pow(2, attempt - 1) * 400 + Math.random() * 150;
+      console.log(`Retry attempt ${attempt}, waiting ${Math.round(delay)}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+
+    try {
+      const response = await fetch(url, options);
+      lastStatus = response.status;
+
+      // Non-retryable errors: return immediately
+      if (response.ok || !RETRYABLE_STATUSES.includes(lastStatus)) {
+        return { response, lastStatus };
+      }
+
+      const errorText = await response.text();
+      console.error(`Gateway ${lastStatus} (attempt ${attempt}):`, errorText.substring(0, 300));
+    } catch (err) {
+      console.error(`Network error (attempt ${attempt}):`, err);
+      lastStatus = 0;
+    }
+  }
+
+  return { response: null, lastStatus };
+}
+
+// --- JSON extraction + repair ---
+function tryParseJson(content: string): unknown | null {
+  // 1. Direct parse
+  try {
+    return JSON.parse(content);
+  } catch { /* continue */ }
+
+  // 2. Extract from markdown code block
+  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch?.[1]) {
+    try {
+      return JSON.parse(codeBlockMatch[1]);
+    } catch { /* continue */ }
+  }
+
+  // 3. Extract outermost {...}
+  const match = content.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch { /* continue */ }
+
+    // 4. Basic repair: trailing commas, missing closures
+    let repaired = match[0]
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]");
+
+    let braces = 0, brackets = 0;
+    for (const c of repaired) {
+      if (c === "{") braces++;
+      if (c === "}") braces--;
+      if (c === "[") brackets++;
+      if (c === "]") brackets--;
+    }
+    while (brackets > 0) { repaired += "]"; brackets--; }
+    while (braces > 0) { repaired += "}"; braces--; }
+
+    try {
+      return JSON.parse(repaired);
+    } catch { /* continue */ }
+  }
+
+  return null;
+}
+
+async function repairJsonWithModel(
+  rawContent: string,
+  schema: string,
+  apiKey: string,
+): Promise<unknown | null> {
+  console.log("Attempting JSON repair via model call...");
+
+  const { response } = await fetchWithRetry(GATEWAY_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: "Return strictly valid JSON only, matching the provided schema. No extra text, no markdown, no explanation.",
+        },
+        {
+          role: "user",
+          content: `Schema:\n${schema}\n\nInvalid JSON to repair:\n${rawContent.substring(0, 3000)}`,
+        },
+      ],
+      stream: false,
+    }),
+  });
+
+  if (!response?.ok) return null;
+
+  try {
+    const data = await response.json();
+    const repairedContent = data.choices?.[0]?.message?.content;
+    if (!repairedContent) return null;
+    return tryParseJson(repairedContent);
+  } catch {
+    return null;
+  }
+}
+
+// --- Schema definitions (inline for prompt) ---
 const FOLLOWUP_SCHEMA = `{
   "user_summary": { "objectType": "string", "householdSize": "string", "mainConcern": "string", "budgetSensitivity": "string (optional)", "constraints": ["string"] },
   "eco_score_explanation": { "score": number, "drivers": [{"driver":"string","weight":"string","reason":"string"}] },
@@ -69,6 +195,7 @@ serve(async (req) => {
 
     let systemPrompt: string;
     let userPrompt: string;
+    const activeSchema = requestedStep === "generate_followups" ? FOLLOWUP_SCHEMA : PLAN_SCHEMA;
 
     if (requestedStep === "generate_followups") {
       systemPrompt = `Ti si EcoCheck AI savetnik iz kompanije EcoSense Market. Specijalizovan si za održivost domaćinstva.
@@ -131,43 +258,25 @@ Na osnovu SVIH odgovora i evidencija, generiši kompletan plan:
 Vrati SAMO validan JSON.`;
     }
 
-    const MAX_RETRIES = 2;
-    let response: Response | null = null;
-    let lastStatus = 0;
-    let lastText = "";
+    // --- Main AI call with retry ---
+    const { response, lastStatus } = await fetchWithRetry(GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        stream: false,
+      }),
+    });
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      if (attempt > 0) {
-        console.log(`Retry attempt ${attempt}...`);
-        await new Promise((r) => setTimeout(r, 1000 * attempt));
-      }
-
-      response = await fetch(
-        "https://ai.gateway.lovable.dev/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "openai/gpt-5-nano",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-            stream: false,
-          }),
-        }
-      );
-
-      if (response.ok) break;
-
-      lastStatus = response.status;
-      lastText = await response.text();
-      console.error(`AI gateway error (attempt ${attempt}):`, lastStatus, lastText);
-
-      // Don't retry on client errors
+    // Handle non-retryable client errors
+    if (response && !response.ok) {
       if (lastStatus === 429) {
         return new Response(
           JSON.stringify({ error: "rate_limit" }),
@@ -182,10 +291,11 @@ Vrati SAMO validan JSON.`;
       }
     }
 
+    // All retries exhausted for 5xx
     if (!response || !response.ok) {
       return new Response(
-        JSON.stringify({ error: "ai_error", detail: `Status ${lastStatus} after ${MAX_RETRIES + 1} attempts` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "upstream_5xx", status: lastStatus }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -200,30 +310,20 @@ Vrati SAMO validan JSON.`;
       );
     }
 
-    // Try to parse as JSON to validate
-    let parsed;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      // Try extracting JSON from the content
-      const match = content.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          parsed = JSON.parse(match[0]);
-        } catch {
-          console.error("Failed to parse extracted JSON:", match[0].substring(0, 200));
-          return new Response(
-            JSON.stringify({ error: "invalid_json", raw: content.substring(0, 500) }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      } else {
-        console.error("No JSON found in AI response:", content.substring(0, 200));
-        return new Response(
-          JSON.stringify({ error: "invalid_json" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // --- JSON parsing pipeline: parse → extract → repair ---
+    let parsed = tryParseJson(content);
+
+    if (!parsed) {
+      // Attempt ONE repair call with the same model
+      parsed = await repairJsonWithModel(content, activeSchema, LOVABLE_API_KEY);
+    }
+
+    if (!parsed) {
+      console.error("All JSON parsing attempts failed. Raw (first 500 chars):", content.substring(0, 500));
+      return new Response(
+        JSON.stringify({ error: "invalid_json" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
