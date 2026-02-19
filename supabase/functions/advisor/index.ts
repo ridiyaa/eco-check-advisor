@@ -131,44 +131,60 @@ Na osnovu SVIH odgovora i evidencija, generiši kompletan plan:
 Vrati SAMO validan JSON.`;
     }
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          stream: false,
-        }),
+    const MAX_RETRIES = 2;
+    let response: Response | null = null;
+    let lastStatus = 0;
+    let lastText = "";
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        console.log(`Retry attempt ${attempt}...`);
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
       }
-    );
 
-    if (!response.ok) {
-      const status = response.status;
-      const text = await response.text();
-      console.error("AI gateway error:", status, text);
+      response = await fetch(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-5-nano",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            stream: false,
+          }),
+        }
+      );
 
-      if (status === 429) {
+      if (response.ok) break;
+
+      lastStatus = response.status;
+      lastText = await response.text();
+      console.error(`AI gateway error (attempt ${attempt}):`, lastStatus, lastText);
+
+      // Don't retry on client errors
+      if (lastStatus === 429) {
         return new Response(
           JSON.stringify({ error: "rate_limit" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (status === 402) {
+      if (lastStatus === 402) {
         return new Response(
           JSON.stringify({ error: "payment_required" }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+    }
+
+    if (!response || !response.ok) {
       return new Response(
-        JSON.stringify({ error: "ai_error" }),
+        JSON.stringify({ error: "ai_error", detail: `Status ${lastStatus} after ${MAX_RETRIES + 1} attempts` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
