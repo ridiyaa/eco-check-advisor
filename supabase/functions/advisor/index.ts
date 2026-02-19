@@ -11,17 +11,119 @@ const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MAX_ATTEMPTS = 3;
 const RETRYABLE_STATUSES = [500, 502, 503, 504];
 
+interface EvidenceItem {
+  evidence_id: string;
+  type: string;
+  title: string;
+  snippet: string;
+}
+
 interface AdvisorRequest {
   answers: Record<string, string>;
   ecoScore: number;
   followUpAnswers?: Record<string, string>;
   requestedStep: "generate_followups" | "generate_plan";
-  retrievedEvidence: Array<{
-    evidence_id: string;
-    type: string;
-    title: string;
-    snippet: string;
-  }>;
+  retrievedEvidence: EvidenceItem[];
+}
+
+// --- Deterministic fallback plan generator ---
+function buildFallbackPlan(
+  answers: Record<string, string>,
+  ecoScore: number,
+  evidence: EvidenceItem[],
+): Record<string, unknown> {
+  const costDriverMap: Record<string, { driver: string; weight: string; reason: string }> = {
+    "Struja": { driver: "Potrošnja električne energije", weight: "50%", reason: "Struja je identifikovana kao najveći trošak u domaćinstvu." },
+    "Grejanje": { driver: "Troškovi grejanja", weight: "50%", reason: "Grejanje čini značajan deo mesečnih troškova." },
+    "Voda": { driver: "Potrošnja vode", weight: "50%", reason: "Voda je identifikovana kao najveći trošak." },
+    "Otpad": { driver: "Upravljanje otpadom", weight: "50%", reason: "Neadekvatno upravljanje otpadom povećava troškove." },
+  };
+
+  const goalDriverMap: Record<string, { driver: string; weight: string; reason: string }> = {
+    "Smanjenje računa": { driver: "Finansijska optimizacija", weight: "30%", reason: "Cilj je direktno smanjenje mesečnih troškova." },
+    "Zdraviji život": { driver: "Zdravlje i kvalitet života", weight: "30%", reason: "Fokus na zdravlje zahteva ekološki svesne izbore." },
+    "Zaštita životne sredine": { driver: "Ekološki otisak", weight: "30%", reason: "Smanjenje ekološkog otiska je prioritet." },
+    "Energetska nezavisnost": { driver: "Energetska nezavisnost", weight: "30%", reason: "Cilj je smanjenje zavisnosti od eksternih izvora energije." },
+  };
+
+  const costDriver = costDriverMap[answers.najveci_trosak] || { driver: "Opšta potrošnja resursa", weight: "50%", reason: "Optimizacija potrošnje resursa." };
+  const goalDriver = goalDriverMap[answers.glavni_cilj] || { driver: "Održivost domaćinstva", weight: "30%", reason: "Unapređenje održivosti." };
+
+  const constraints: string[] = [];
+  if (answers.dvoriste === "Ne") constraints.push("Nema dvorište/baštu");
+  if (answers.tip_objekta === "Stan") constraints.push("Stanovanje u stanu — ograničene mogućnosti za spoljne instalacije");
+
+  // Build recommendations from evidence
+  const recommendations = evidence.slice(0, 5).map((ev, i) => {
+    const isProduct = ev.type === "product";
+    const categoryGuess = ev.evidence_id.includes("water") || ev.title.toLowerCase().includes("vod") ? "water"
+      : ev.evidence_id.includes("waste") || ev.title.toLowerCase().includes("otpad") ? "waste"
+      : "energy";
+
+    return {
+      id: `fallback-rec-${i + 1}`,
+      title: isProduct ? `Razmotrite: ${ev.title}` : ev.title,
+      category: categoryGuess,
+      priority: i + 1,
+      impact_range: "Procena nedostupna — pogledajte detalje",
+      effort_level: i < 2 ? "Nizak" : "Srednji",
+      cost_range: "Pogledajte opis proizvoda",
+      reasoning_bullets: [
+        ev.snippet.substring(0, 120) + (ev.snippet.length > 120 ? "..." : ""),
+        `Relevantno za vaš cilj: ${answers.glavni_cilj || "održivost"}`,
+        `Povezano sa troškom: ${answers.najveci_trosak || "opšti troškovi"}`,
+      ],
+      assumptions: ["AI servis privremeno nedostupan — plan je generisan iz baze znanja"],
+      confidence: 0.35 + (i < 2 ? 0.15 : 0.05),
+      evidence_ids: [ev.evidence_id],
+      products: isProduct ? [ev.title] : [],
+    };
+  });
+
+  // Action plan
+  const quickWins = evidence
+    .filter((e) => e.type === "guide")
+    .slice(0, 3)
+    .map((e) => e.title);
+  if (quickWins.length === 0) quickWins.push("Proverite navike potrošnje resursa");
+
+  const longerTerm = evidence
+    .filter((e) => e.type === "product")
+    .slice(0, 3)
+    .map((e) => `Razmotriti nabavku: ${e.title}`);
+  if (longerTerm.length === 0) longerTerm.push("Istražite pametne uređaje za uštedu");
+
+  const steps = recommendations.slice(0, 3).map((r, i) => ({
+    title: r.title,
+    description: r.reasoning_bullets[0],
+    timeframe: i === 0 ? "Odmah" : i === 1 ? "Nedelja 1–2" : "Mesec 1–3",
+  }));
+
+  return {
+    user_summary: {
+      objectType: answers.tip_objekta || "Nepoznato",
+      householdSize: answers.broj_clanova || "Nepoznato",
+      mainConcern: answers.najveci_trosak || "Nepoznato",
+      budgetSensitivity: answers.glavni_cilj === "Smanjenje računa" ? "Visoka" : "Srednja",
+      constraints,
+    },
+    eco_score_explanation: {
+      score: ecoScore,
+      drivers: [
+        costDriver,
+        goalDriver,
+        { driver: "Veličina domaćinstva", weight: "20%", reason: `Domaćinstvo sa ${answers.broj_clanova || "nepoznatim brojem"} članova.` },
+      ],
+    },
+    follow_up_questions: [],
+    recommendations,
+    action_plan: { steps, quick_wins: quickWins, longer_term: longerTerm },
+    safety_notes: [
+      "Za električne radove konsultujte stručnjaka.",
+      "Pre instalacije bilo kog uređaja proverite kompatibilnost sa vašim sistemom.",
+    ],
+    disclaimer: "Ovaj plan je generisan automatski iz baze znanja jer AI servis trenutno nije dostupan. Za personalizovanije preporuke, pokušajte ponovo kasnije.",
+  };
 }
 
 // --- Retry helper with exponential backoff + jitter ---
@@ -291,11 +393,23 @@ Vrati SAMO validan JSON.`;
       }
     }
 
-    // All retries exhausted for 5xx
+    // All retries exhausted for 5xx — generate deterministic fallback
     if (!response || !response.ok) {
+      console.log("AI unavailable, generating fallback plan from knowledge base.");
+
+      if (requestedStep === "generate_followups") {
+        // Skip follow-ups, go straight to fallback plan
+        const fallbackContent = buildFallbackPlan(answers, ecoScore, retrievedEvidence);
+        return new Response(
+          JSON.stringify({ mode: "fallback", error: "upstream_5xx", content: fallbackContent, step: "generate_plan" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const fallbackContent = buildFallbackPlan(answers, ecoScore, retrievedEvidence);
       return new Response(
-        JSON.stringify({ error: "upstream_5xx", status: lastStatus }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ mode: "fallback", error: "upstream_5xx", content: fallbackContent, step: requestedStep }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
