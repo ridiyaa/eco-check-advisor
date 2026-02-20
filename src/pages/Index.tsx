@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Leaf, Loader2, RotateCcw, ExternalLink, Lightbulb, AlertTriangle, Droplets, Zap, TreePine, BrainCircuit, Bolt } from "lucide-react";
+import { Leaf, Loader2, RotateCcw, ExternalLink, Lightbulb, AlertTriangle, Droplets, Zap, TreePine, BrainCircuit, Bolt, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -40,6 +40,7 @@ const Index = () => {
   const [result, setResult] = useState<AIResponse | null>(null);
   const [ecoScore, setEcoScore] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isFallback, setIsFallback] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +75,15 @@ const Index = () => {
         setState("error");
         return;
       }
+      if (data?.mode === "fallback") {
+        setIsFallback(true);
+        const parsed = parseAIResponse(data.content);
+        setResult(parsed);
+        setState("results");
+        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        return;
+      }
+      setIsFallback(false);
       const parsed = parseAIResponse(data.content);
       setResult(parsed);
       setState("results");
@@ -89,6 +99,7 @@ const Index = () => {
     setState("form");
     setResult(null);
     setErrorMsg("");
+    setIsFallback(false);
   };
 
   const priorityColor = (level: string) => {
@@ -240,6 +251,16 @@ const Index = () => {
           {/* Quick Results */}
           {state === "results" && result && (
             <motion.div key="results" ref={resultsRef} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
+              {isFallback && (
+                <Card className="border-accent bg-accent/30">
+                  <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                    <Info className="h-5 w-5 text-accent-foreground shrink-0" />
+                    <p className="text-sm text-accent-foreground">
+                      AI servis je trenutno nedostupan — prikazujemo brzi rezultat bez AI.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
               <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="pt-6">
                   <p className="text-lg leading-relaxed">{result.summary}</p>
