@@ -417,10 +417,11 @@ Vrati SAMO validan JSON.`;
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.error("No content in AI response");
+      console.log("No content in AI response, returning fallback.");
+      const fallbackContent = buildFallbackPlan(answers, ecoScore, retrievedEvidence);
       return new Response(
-        JSON.stringify({ error: "empty_response" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ mode: "fallback", content: fallbackContent, step: requestedStep }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -433,10 +434,11 @@ Vrati SAMO validan JSON.`;
     }
 
     if (!parsed) {
-      console.error("All JSON parsing attempts failed. Raw (first 500 chars):", content.substring(0, 500));
+      console.error("All JSON parsing attempts failed, returning fallback. Raw (first 500 chars):", content.substring(0, 500));
+      const fallbackContent = buildFallbackPlan(answers, ecoScore, retrievedEvidence);
       return new Response(
-        JSON.stringify({ error: "invalid_json" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ mode: "fallback", content: fallbackContent, step: requestedStep }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

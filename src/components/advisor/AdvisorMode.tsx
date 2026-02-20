@@ -25,7 +25,9 @@ export function AdvisorMode({ answers, onReset }: Props) {
   const [errorMsg, setErrorMsg] = useState("");
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({});
   const [isFallback, setIsFallback] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{ raw: unknown; error: string } | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const isDev = new URLSearchParams(window.location.search).get("dev") === "1";
 
   const handleError = (msg: string) => {
     setErrorMsg(msg);
@@ -98,6 +100,7 @@ export function AdvisorMode({ answers, onReset }: Props) {
       const parsed = AdvisorResponseSchema.safeParse(result.content);
       if (!parsed.success) {
         if (import.meta.env.DEV) console.error("[Advisor] Fallback plan parse error:", parsed.error, "Raw:", result.content);
+        setDebugInfo({ raw: result.content, error: parsed.error.message });
         handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
         return;
       }
@@ -110,6 +113,7 @@ export function AdvisorMode({ answers, onReset }: Props) {
     const parsed = FollowUpResponseSchema.safeParse(result.content);
     if (!parsed.success) {
       if (import.meta.env.DEV) console.error("[Advisor] Follow-up parse error:", parsed.error, "Raw:", result.content);
+      setDebugInfo({ raw: result.content, error: parsed.error.message });
       handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
       return;
     }
@@ -131,6 +135,7 @@ export function AdvisorMode({ answers, onReset }: Props) {
     const parsed = AdvisorResponseSchema.safeParse(result.content);
     if (!parsed.success) {
       if (import.meta.env.DEV) console.error("[Advisor] Plan parse error:", parsed.error, "Raw:", result.content);
+      setDebugInfo({ raw: result.content, error: parsed.error.message });
       handleError("AI odgovor nije u očekivanom formatu. Pokušajte ponovo.");
       return;
     }
@@ -192,8 +197,17 @@ export function AdvisorMode({ answers, onReset }: Props) {
               <CardContent className="pt-8 text-center space-y-4">
                 <AlertTriangle className="h-12 w-12 mx-auto text-destructive" />
                 <p className="text-lg font-medium">{errorMsg}</p>
+                {isDev && debugInfo && (
+                  <details className="text-left mt-4 p-3 bg-muted rounded-lg text-xs">
+                    <summary className="cursor-pointer font-medium text-sm mb-2">🔧 Dev Debug Info</summary>
+                    <p className="font-semibold mb-1">Zod Error:</p>
+                    <pre className="whitespace-pre-wrap break-all mb-3 text-destructive">{debugInfo.error}</pre>
+                    <p className="font-semibold mb-1">Raw AI Content:</p>
+                    <pre className="whitespace-pre-wrap break-all max-h-64 overflow-auto">{JSON.stringify(debugInfo.raw, null, 2)}</pre>
+                  </details>
+                )}
                 <div className="flex gap-2 justify-center">
-                  <Button onClick={() => { setState("idle"); }} variant="default" className="gap-2">
+                  <Button onClick={() => { setDebugInfo(null); setState("idle"); }} variant="default" className="gap-2">
                     <RotateCcw className="h-4 w-4" />
                     Pokušaj ponovo
                   </Button>

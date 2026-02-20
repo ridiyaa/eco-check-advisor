@@ -45,6 +45,19 @@ export const RecommendationSchema = z.object({
   products: z.array(z.string()).default([]),
 });
 
+// Tolerant follow-up item: accept either a full object or a bare string
+const TolerantFollowUpItem = z.union([
+  FollowUpQuestionSchema,
+  z.string().transform((s) => ({
+    id: `auto-${Math.random().toString(36).slice(2, 8)}`,
+    question: s,
+    type: "free_text" as const,
+    options: [],
+    why_asking: "",
+    maps_to: "",
+  })),
+]);
+
 export const AdvisorResponseSchema = z.object({
   user_summary: z.object({
     objectType: z.string(),
@@ -61,9 +74,9 @@ export const AdvisorResponseSchema = z.object({
         weight: z.union([z.string(), z.number()]).transform(String),
         reason: z.string(),
       })
-    ),
+    ).default([]),
   }),
-  follow_up_questions: z.array(FollowUpQuestionSchema).max(3).default([]),
+  follow_up_questions: z.array(TolerantFollowUpItem).max(3).default([]),
   recommendations: z.array(RecommendationSchema).min(1).max(5),
   action_plan: z.object({
     steps: z.array(
@@ -72,7 +85,7 @@ export const AdvisorResponseSchema = z.object({
         description: z.string(),
         timeframe: z.string(),
       })
-    ),
+    ).default([]),
     quick_wins: z.array(z.string()).default([]),
     longer_term: z.array(z.string()).default([]),
   }),
