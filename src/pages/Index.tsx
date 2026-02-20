@@ -124,8 +124,8 @@ const Index = () => {
       {!isEmbed && (
         <header className="bg-primary text-primary-foreground py-12 px-4 sm:py-20">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Leaf className="h-8 w-8" />
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <img src="/logo.png" alt="EcoSense Market logo" className="h-10 w-10" />
               <span className="text-sm font-medium tracking-widest uppercase opacity-80">EcoSense Market</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight">
