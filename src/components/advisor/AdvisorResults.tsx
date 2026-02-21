@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ExternalLink, Lightbulb, ShieldAlert, Zap, Droplets, TreePine, Leaf, ChevronDown } from "lucide-react";
+import { ExternalLink, Lightbulb, ShieldAlert, Zap, Droplets, TreePine, Leaf, ChevronDown, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -68,6 +68,21 @@ export function AdvisorResults({ result, ecoScore, onRegenerate, isRegenerating 
         </CardContent>
       </Card>
 
+      {/* Reasoning Summary */}
+      {result.reasoning_summary && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6 space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold">Kako smo došli do ovih preporuka?</h2>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {result.reasoning_summary}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recommendations */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold">Top akcije za vas</h2>
@@ -102,6 +117,12 @@ export function AdvisorResults({ result, ecoScore, onRegenerate, isRegenerating 
                     <Badge variant="secondary">{rec.effort_level}</Badge>
                     <Badge variant="secondary">{rec.cost_range}</Badge>
                   </div>
+
+                  {rec.priority_reason && (
+                    <p className="text-sm text-primary font-medium italic">
+                      {rec.priority_reason}
+                    </p>
+                  )}
 
                   {/* Reasoning accordion */}
                   <Accordion type="single" collapsible>

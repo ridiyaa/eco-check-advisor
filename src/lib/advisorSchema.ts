@@ -43,6 +43,7 @@ export const RecommendationSchema = z.object({
   confidence: z.coerce.number().min(0).max(1),
   evidence_ids: z.array(z.string()).default([]),
   products: z.array(z.string()).default([]),
+  priority_reason: z.string().optional().default(""),
 });
 
 // Tolerant follow-up item: accept either a full object or a bare string
@@ -76,6 +77,7 @@ export const AdvisorResponseSchema = z.object({
       })
     ).default([]),
   }),
+  reasoning_summary: z.string().optional().default(""),
   follow_up_questions: z.array(TolerantFollowUpItem).max(3).default([]),
   recommendations: z.array(RecommendationSchema).min(1).max(5),
   action_plan: z.object({

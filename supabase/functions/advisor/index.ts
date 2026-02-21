@@ -60,6 +60,11 @@ function buildFallbackPlan(
       : ev.evidence_id.includes("waste") || ev.title.toLowerCase().includes("otpad") ? "waste"
       : "energy";
 
+    const priorityReasonParts: string[] = [];
+    if (answers.najveci_trosak) priorityReasonParts.push(`najveći trošak je ${answers.najveci_trosak.toLowerCase()}`);
+    if (answers.tip_objekta) priorityReasonParts.push(`objekat je ${answers.tip_objekta.toLowerCase()}`);
+    const priorityReason = `Ova mera je prioritet jer ${priorityReasonParts.join(", a ")}.`;
+
     return {
       id: `fallback-rec-${i + 1}`,
       title: isProduct ? `Razmotrite: ${ev.title}` : ev.title,
@@ -77,6 +82,7 @@ function buildFallbackPlan(
       confidence: 0.35 + (i < 2 ? 0.15 : 0.05),
       evidence_ids: [ev.evidence_id],
       products: isProduct ? [ev.title] : [],
+      priority_reason: priorityReason,
     };
   });
 
@@ -99,6 +105,15 @@ function buildFallbackPlan(
     timeframe: i === 0 ? "Odmah" : i === 1 ? "Nedelja 1–2" : "Mesec 1–3",
   }));
 
+  // Build reasoning summary from user inputs
+  const reasoningParts: string[] = [];
+  if (answers.najveci_trosak) reasoningParts.push(`najveći mesečni trošak je ${answers.najveci_trosak.toLowerCase()}`);
+  if (answers.tip_objekta) reasoningParts.push(`objekat je ${answers.tip_objekta.toLowerCase()}`);
+  if (answers.dvoriste === "Da") reasoningParts.push("postoji dvorište ili bašta");
+  if (answers.dvoriste === "Ne") reasoningParts.push("nema dvorište ni baštu");
+  if (answers.glavni_cilj) reasoningParts.push(`cilj je ${answers.glavni_cilj.toLowerCase()}`);
+  const reasoningSummary = `Pošto ${reasoningParts.slice(0, 3).join(", a ")}, fokusiramo se na mere koje direktno utiču na smanjenje tog troška i odgovaraju vašem tipu objekta.`;
+
   return {
     user_summary: {
       objectType: answers.tip_objekta || "Nepoznato",
@@ -115,6 +130,7 @@ function buildFallbackPlan(
         { driver: "Veličina domaćinstva", weight: "20%", reason: `Domaćinstvo sa ${answers.broj_clanova || "nepoznatim brojem"} članova.` },
       ],
     },
+    reasoning_summary: reasoningSummary,
     follow_up_questions: [],
     recommendations,
     action_plan: { steps, quick_wins: quickWins, longer_term: longerTerm },
@@ -256,8 +272,9 @@ const FOLLOWUP_SCHEMA = `{
 const PLAN_SCHEMA = `{
   "user_summary": { "objectType": "string", "householdSize": "string", "mainConcern": "string", "budgetSensitivity": "string (optional)", "constraints": ["string"] },
   "eco_score_explanation": { "score": number, "drivers": [{"driver":"string","weight":"string","reason":"string"}] },
+  "reasoning_summary": "string — 2-3 rečenice kauzalnog obrazloženja koje referišu najmanje 2 korisnikova odgovora. Objasni ZAŠTO si izabrao ove preporuke, ne ŠTA su.",
   "follow_up_questions": [],
-  "recommendations": [{ "id": "string", "title": "string", "category": "energy|water|waste", "priority": 1-5, "impact_range": "string", "effort_level": "string", "cost_range": "string", "reasoning_bullets": ["string (3-5 items)"], "assumptions": ["string"], "confidence": 0.0-1.0, "evidence_ids": ["string - MUST match provided evidence IDs"], "products": ["string"] }],
+  "recommendations": [{ "id": "string", "title": "string", "category": "energy|water|waste", "priority": 1-5, "impact_range": "string", "effort_level": "string", "cost_range": "string", "reasoning_bullets": ["string (3-5 items)"], "assumptions": ["string"], "confidence": 0.0-1.0, "evidence_ids": ["string - MUST match provided evidence IDs"], "products": ["string"], "priority_reason": "string — jedna rečenica koja počinje sa 'Ova mera je prioritet jer…'" }],
   "action_plan": { "steps": [{"title":"string","description":"string","timeframe":"string"}], "quick_wins": ["string"], "longer_term": ["string"] },
   "safety_notes": ["string"],
   "disclaimer": "string"
@@ -338,6 +355,9 @@ PRAVILA:
 6. Preporuči 3–5 akcija, rangirane po prioritetu.
 7. Svaka preporuka ima reasoning_bullets (3–5), assumptions, confidence (0–1).
 8. action_plan mora imati quick_wins i longer_term.
+9. OBAVEZNO: "reasoning_summary" mora sadržati 2-3 rečenice kauzalnog obrazloženja (ne opisa). Navedi najmanje 2 korisnikova odgovora i objasni ZAŠTO su ove preporuke izabrane. Primer: "Pošto je najveći trošak voda, a objekat je kuća sa dvorištem, pretpostavljamo veći rizik od curenja..."
+10. OBAVEZNO: Svaka preporuka mora imati "priority_reason" — jednu rečenicu koja počinje sa "Ova mera je prioritet jer…"
+11. DIFERENCIJACIJA: Rezultati MORAJU da se značajno razlikuju za Stan vs Kuća, Dvorište Da vs Ne, Struja vs Voda. Ako korisnik nema dvorište, NIKADA ne preporučuj navodnjavanje. Ako je stan, izbegavaj spoljne instalacije.
 
 JSON schema za odgovor:
 ${PLAN_SCHEMA}
