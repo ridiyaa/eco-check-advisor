@@ -99,10 +99,11 @@ function buildFallbackPlan(
     .map((e) => `Razmotriti nabavku: ${e.title}`);
   if (longerTerm.length === 0) longerTerm.push("Istražite pametne uređaje za uštedu");
 
+  const phaseLabels = ["Faza 1 – Brze optimizacije", "Faza 2 – Tehnička unapređenja", "Faza 3 – Strukturne mere"];
   const steps = recommendations.slice(0, 3).map((r, i) => ({
     title: r.title,
     description: r.reasoning_bullets[0],
-    timeframe: i === 0 ? "Odmah" : i === 1 ? "Nedelja 1–2" : "Mesec 1–3",
+    timeframe: phaseLabels[i] || phaseLabels[phaseLabels.length - 1],
   }));
 
   // Build reasoning summary from user inputs
@@ -354,7 +355,7 @@ PRAVILA:
 5. Ako evidencija nije dovoljna, postavi confidence na 0.3 ili niže i navedi u assumptions.
 6. Preporuči 3–5 akcija, rangirane po prioritetu.
 7. Svaka preporuka ima reasoning_bullets (3–5), assumptions, confidence (0–1).
-8. action_plan mora imati quick_wins i longer_term.
+8. action_plan mora imati quick_wins i longer_term. Za polje "timeframe" u steps koristi fazni pristup prema nivou napora: "Faza 1 – Brze optimizacije", "Faza 2 – Tehnička unapređenja", "Faza 3 – Strukturne mere". NIKADA ne koristi vremenske oznake poput "Dan 1", "Nedelja 1", "Mesec 1" itd.
 9. OBAVEZNO: "reasoning_summary" mora sadržati 2-3 rečenice kauzalnog obrazloženja (ne opisa). Navedi najmanje 2 korisnikova odgovora i objasni ZAŠTO su ove preporuke izabrane. Primer: "Pošto je najveći trošak voda, a objekat je kuća sa dvorištem, pretpostavljamo veći rizik od curenja..."
 10. OBAVEZNO: Svaka preporuka mora imati "priority_reason" — jednu rečenicu koja počinje sa "Ova mera je prioritet jer…"
 11. DIFERENCIJACIJA: Rezultati MORAJU da se značajno razlikuju za Stan vs Kuća, Dvorište Da vs Ne, Struja vs Voda. Ako korisnik nema dvorište, NIKADA ne preporučuj navodnjavanje. Ako je stan, izbegavaj spoljne instalacije.
