@@ -124,15 +124,12 @@ const Index = () => {
       {!isEmbed && (
         <header className="bg-primary text-primary-foreground py-12 px-4 sm:py-20">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <img src="/logo.png" alt="EcoSense Market logo" className="h-10 w-10" />
-              <span className="text-sm font-medium tracking-widest uppercase opacity-80">EcoSense Market</span>
-            </div>
+            <span className="text-sm font-medium tracking-widest uppercase opacity-80 mb-2 block">EcoSense Market</span>
             <h1 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight">
               EcoCheck – Pametna preporuka za održiv dom
             </h1>
             <p className="text-lg opacity-90 max-w-xl mx-auto">
-              Odgovorite na nekoliko pitanja i saznajte kako da smanjite potrošnju energije i vode.
+              Odgovorite na nekoliko pitanja i dobijte personalizovan plan za smanjenje potrošnje energije i vode u vašem domu.
             </p>
           </div>
         </header>
