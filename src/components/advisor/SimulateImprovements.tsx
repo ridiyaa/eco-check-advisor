@@ -77,7 +77,7 @@ export function SimulateImprovements({ baseScore, onRegenerate, isLoading }: Pro
               className="w-full gap-2"
             >
               <Sparkles className="h-4 w-4" />
-              {isLoading ? "Regenerišem plan..." : "Regeneriši plan sa novim score-om"}
+              {isLoading ? "Regenerišem plan..." : "Regeneriši plan sa novim rezultatom"}
             </Button>
           </motion.div>
         )}

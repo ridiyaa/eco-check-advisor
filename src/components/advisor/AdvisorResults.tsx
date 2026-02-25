@@ -59,7 +59,7 @@ export function AdvisorResults({ result, ecoScore, onRegenerate, isRegenerating 
                   <span>{d.driver}</span>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{d.weight}</Badge>
-                    <span className="text-muted-foreground text-xs max-w-[200px] truncate">{d.reason}</span>
+                    <span className="text-muted-foreground text-xs">{d.reason}</span>
                   </div>
                 </div>
               ))}
