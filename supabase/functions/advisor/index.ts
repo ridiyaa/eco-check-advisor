@@ -33,17 +33,17 @@ function buildFallbackPlan(
   evidence: EvidenceItem[],
 ): Record<string, unknown> {
   const costDriverMap: Record<string, { driver: string; weight: string; reason: string }> = {
-    "Struja": { driver: "Potrošnja električne energije", weight: "50%", reason: "Struja je identifikovana kao najveći trošak u domaćinstvu." },
-    "Grejanje": { driver: "Troškovi grejanja", weight: "50%", reason: "Grejanje čini značajan deo mesečnih troškova." },
-    "Voda": { driver: "Potrošnja vode", weight: "50%", reason: "Voda je identifikovana kao najveći trošak." },
-    "Otpad": { driver: "Upravljanje otpadom", weight: "50%", reason: "Neadekvatno upravljanje otpadom povećava troškove." },
+    "Struja": { driver: "Potrošnja električne energije", weight: "50%", reason: "Prema odgovorima, struja je jedan od značajnijih troškova u domaćinstvu." },
+    "Grejanje": { driver: "Troškovi grejanja", weight: "50%", reason: "Prema odgovorima, grejanje predstavlja zapažen deo mesečnih izdataka." },
+    "Voda": { driver: "Potrošnja vode", weight: "50%", reason: "Prema odgovorima, voda je jedan od značajnijih troškova." },
+    "Otpad": { driver: "Upravljanje otpadom", weight: "50%", reason: "Upravljanje otpadom može biti prostor za optimizaciju troškova." },
   };
 
   const goalDriverMap: Record<string, { driver: string; weight: string; reason: string }> = {
-    "Smanjenje računa": { driver: "Finansijska optimizacija", weight: "30%", reason: "Cilj je direktno smanjenje mesečnih troškova." },
-    "Zdraviji život": { driver: "Zdravlje i kvalitet života", weight: "30%", reason: "Fokus na zdravlje zahteva ekološki svesne izbore." },
-    "Zaštita životne sredine": { driver: "Ekološki otisak", weight: "30%", reason: "Smanjenje ekološkog otiska je prioritet." },
-    "Energetska nezavisnost": { driver: "Energetska nezavisnost", weight: "30%", reason: "Cilj je smanjenje zavisnosti od eksternih izvora energije." },
+    "Smanjenje računa": { driver: "Finansijska optimizacija", weight: "30%", reason: "Korisnik je naznačio interes za smanjenje mesečnih troškova." },
+    "Zdraviji život": { driver: "Zdravlje i kvalitet života", weight: "30%", reason: "Korisnik je istakao zdravlje kao jedan od prioriteta." },
+    "Zaštita životne sredine": { driver: "Ekološki otisak", weight: "30%", reason: "Korisnik je izrazio interes za smanjenje ekološkog otiska." },
+    "Energetska nezavisnost": { driver: "Energetska nezavisnost", weight: "30%", reason: "Korisnik je naveo interes za veću energetsku samostalnost." },
   };
 
   const costDriver = costDriverMap[answers.najveci_trosak] || { driver: "Opšta potrošnja resursa", weight: "50%", reason: "Optimizacija potrošnje resursa." };
@@ -61,9 +61,9 @@ function buildFallbackPlan(
       : "energy";
 
     const priorityReasonParts: string[] = [];
-    if (answers.najveci_trosak) priorityReasonParts.push(`najveći trošak je ${answers.najveci_trosak.toLowerCase()}`);
-    if (answers.tip_objekta) priorityReasonParts.push(`objekat je ${answers.tip_objekta.toLowerCase()}`);
-    const priorityReason = `Ova mera je prioritet jer ${priorityReasonParts.join(", a ")}.`;
+    if (answers.najveci_trosak) priorityReasonParts.push(`prema odgovorima, ${answers.najveci_trosak.toLowerCase()} je među značajnijim troškovima`);
+    if (answers.tip_objekta) priorityReasonParts.push(`tip objekta je ${answers.tip_objekta.toLowerCase()}`);
+    const priorityReason = `Ova mera je relevantna jer ${priorityReasonParts.join(", a ")}.`;
 
     return {
       id: `fallback-rec-${i + 1}`,
@@ -91,13 +91,13 @@ function buildFallbackPlan(
     .filter((e) => e.type === "guide")
     .slice(0, 3)
     .map((e) => e.title);
-  if (quickWins.length === 0) quickWins.push("Proverite navike potrošnje resursa");
+  if (quickWins.length === 0) quickWins.push("Možete razmotriti pregled navika potrošnje resursa");
 
   const longerTerm = evidence
     .filter((e) => e.type === "product")
     .slice(0, 3)
-    .map((e) => `Razmotriti nabavku: ${e.title}`);
-  if (longerTerm.length === 0) longerTerm.push("Istražite pametne uređaje za uštedu");
+    .map((e) => `Možete razmotriti nabavku: ${e.title}`);
+  if (longerTerm.length === 0) longerTerm.push("Sledeći logičan korak je istraživanje pametnih uređaja za uštedu");
 
   const phaseLabels = ["Faza 1 – Brze optimizacije", "Faza 2 – Tehnička unapređenja", "Faza 3 – Strukturne mere"];
   const steps = recommendations.slice(0, 3).map((r, i) => ({
@@ -108,12 +108,12 @@ function buildFallbackPlan(
 
   // Build reasoning summary from user inputs
   const reasoningParts: string[] = [];
-  if (answers.najveci_trosak) reasoningParts.push(`najveći mesečni trošak je ${answers.najveci_trosak.toLowerCase()}`);
-  if (answers.tip_objekta) reasoningParts.push(`objekat je ${answers.tip_objekta.toLowerCase()}`);
+  if (answers.najveci_trosak) reasoningParts.push(`${answers.najveci_trosak.toLowerCase()} je naveden kao jedan od značajnijih mesečnih troškova`);
+  if (answers.tip_objekta) reasoningParts.push(`tip objekta je ${answers.tip_objekta.toLowerCase()}`);
   if (answers.dvoriste === "Da") reasoningParts.push("postoji dvorište ili bašta");
   if (answers.dvoriste === "Ne") reasoningParts.push("nema dvorište ni baštu");
-  if (answers.glavni_cilj) reasoningParts.push(`cilj je ${answers.glavni_cilj.toLowerCase()}`);
-  const reasoningSummary = `Pošto ${reasoningParts.slice(0, 3).join(", a ")}, fokusiramo se na mere koje direktno utiču na smanjenje tog troška i odgovaraju vašem tipu objekta.`;
+  if (answers.glavni_cilj) reasoningParts.push(`naznačen cilj je ${answers.glavni_cilj.toLowerCase()}`);
+  const reasoningSummary = `Na osnovu odgovora — ${reasoningParts.slice(0, 3).join(", ")} — preporuke su usmerene ka merama koje odgovaraju ovom profilu domaćinstva.`;
 
   return {
     user_summary: {
@@ -273,9 +273,9 @@ const FOLLOWUP_SCHEMA = `{
 const PLAN_SCHEMA = `{
   "user_summary": { "objectType": "string", "householdSize": "string", "mainConcern": "string", "budgetSensitivity": "string (optional)", "constraints": ["string"] },
   "eco_score_explanation": { "score": number, "drivers": [{"driver":"string","weight":"string","reason":"string"}] },
-  "reasoning_summary": "string — 2-3 rečenice kauzalnog obrazloženja koje referišu najmanje 2 korisnikova odgovora. Objasni ZAŠTO si izabrao ove preporuke, ne ŠTA su.",
+  "reasoning_summary": "string — 2-3 rečenice analitičkog obrazloženja, neutralan ton. Navedi najmanje 2 korisnikova odgovora. Bez alarmizma, apsolutnih tvrdnji ili spekulacija.",
   "follow_up_questions": [],
-  "recommendations": [{ "id": "string", "title": "string", "category": "energy|water|waste", "priority": 1-5, "impact_range": "string", "effort_level": "string", "cost_range": "string", "reasoning_bullets": ["string (3-5 items)"], "assumptions": ["string"], "confidence": 0.0-1.0, "evidence_ids": ["string - MUST match provided evidence IDs"], "products": ["string"], "priority_reason": "string — jedna rečenica koja počinje sa 'Ova mera je prioritet jer…'" }],
+  "recommendations": [{ "id": "string", "title": "string", "category": "energy|water|waste", "priority": 1-5, "impact_range": "string", "effort_level": "string", "cost_range": "string", "reasoning_bullets": ["string (3-5 items)"], "assumptions": ["string"], "confidence": 0.0-1.0, "evidence_ids": ["string - MUST match provided evidence IDs"], "products": ["string"], "priority_reason": "string — jedna rečenica koja počinje sa 'Ova mera je relevantna jer…', specifična za korisnikove odgovore, bez preterivanja" }],
   "action_plan": { "steps": [{"title":"string","description":"string","timeframe":"string"}], "quick_wins": ["string"], "longer_term": ["string"] },
   "safety_notes": ["string"],
   "disclaimer": "string"
@@ -356,9 +356,10 @@ PRAVILA:
 6. Preporuči 3–5 akcija, rangirane po prioritetu.
 7. Svaka preporuka ima reasoning_bullets (3–5), assumptions, confidence (0–1).
 8. action_plan mora imati quick_wins i longer_term. Za polje "timeframe" u steps koristi fazni pristup prema nivou napora: "Faza 1 – Brze optimizacije", "Faza 2 – Tehnička unapređenja", "Faza 3 – Strukturne mere". NIKADA ne koristi vremenske oznake poput "Dan 1", "Nedelja 1", "Mesec 1" itd.
-9. OBAVEZNO: "reasoning_summary" mora sadržati 2-3 rečenice kauzalnog obrazloženja (ne opisa). Navedi najmanje 2 korisnikova odgovora i objasni ZAŠTO su ove preporuke izabrane. Primer: "Pošto je najveći trošak voda, a objekat je kuća sa dvorištem, pretpostavljamo veći rizik od curenja..."
-10. OBAVEZNO: Svaka preporuka mora imati "priority_reason" — jednu rečenicu koja počinje sa "Ova mera je prioritet jer…"
-11. DIFERENCIJACIJA: Rezultati MORAJU da se značajno razlikuju za Stan vs Kuća, Dvorište Da vs Ne, Struja vs Voda. Ako korisnik nema dvorište, NIKADA ne preporučuj navodnjavanje. Ako je stan, izbegavaj spoljne instalacije.
+9. OBAVEZNO: "reasoning_summary" mora sadržati 2-3 rečenice analitičkog obrazloženja. Navedi najmanje 2 korisnikova odgovora i objasni logiku izbora preporuka. Koristi neutralan, savetodavni ton. ZABRANJENO: alarmistični izrazi ("hitna", "visoka verovatnoća", "direktno utiče"), apsolutne tvrdnje ("najveći trošak"), spekulacije o skrivenim problemima, dramatično ekološko uokviravanje. Umesto toga koristi formulacije poput "prema odgovorima", "jedan od značajnijih", "može se razmotriti".
+10. OBAVEZNO: Svaka preporuka mora imati "priority_reason" — jednu rečenicu koja počinje sa "Ova mera je relevantna jer…" Rečenica mora biti specifična za korisnikove odgovore, bez preterivanja i emocionalnog uokviravanja.
+11. DIFERENCIJACIJA: Rezultati MORAJU da se značajno razlikuju za Stan vs Kuća, Dvorište Da vs Ne, Struja vs Voda. Ako korisnik nema dvorište, NIKADA ne preporučuj navodnjavanje. Ako je stan, izbegavaj spoljne instalacije. Scenario sa strujom ne sme pominjati logiku vezanu za vodu i obrnuto.
+12. TON: Profesionalan, analitičan, savetodavni. Bez marketinškog jezika, bez alarmiranja, bez emocionalnog ubeđivanja. Koristi meke glagole u akcionom planu: "Možete razmotriti…", "Preporučuje se započeti sa…", "Sledeći logičan korak je…". NIKADA ne koristi imperativne naredbe.
 
 JSON schema za odgovor:
 ${PLAN_SCHEMA}
