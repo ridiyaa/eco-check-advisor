@@ -43,9 +43,11 @@ export function computeEcoScore(answers: QuestionnaireAnswers): number {
 export const PRODUCT_URL_MAP: Record<string, string> = {
   "Pametni termostat": "https://ecosense-market.rs/product/termostat",
   "Pametni merač potrošnje struje": "https://ecosense-market.rs/product/merac-struje",
-  "Pametni LED sistem": "https://ecosense-market.rs/product/led-sistem",
-  "Pametni sistem za navodnjavanje": "https://ecosense-market.rs/product/navodnjavanje",
-  "Senzor curenja vode": "https://ecosense-market.rs/product/senzor-curenja",
+  "Pametni LED sistem osvetljenja": "https://ecosense-market.rs/product/led-sistem",
+  "Pametan sistem za navodnjavanje": "https://ecosense-market.rs/product/navodnjavanje",
+  "Pametan senzor curenja vode": "https://ecosense-market.rs/product/senzor-curenja",
+  "Pametna boca za vodu": "https://ecosense-market.rs/product/boca-za-vodu",
+  "Pametna kanta za reciklažu": "https://ecosense-market.rs/product/kanta-za-reciklazu",
 };
 
 export interface Recommendation {
@@ -88,7 +90,7 @@ export function parseAIResponse(raw: string): AIResponse {
   // Filter to only known products and override URLs
   parsed.top_recommendations = parsed.top_recommendations
     .filter((r) => r.product_name in PRODUCT_URL_MAP)
-    .slice(0, 3);
+    .slice(0, 7);
 
   if (import.meta.env.DEV) {
     console.log("Parsed AI response:", parsed);

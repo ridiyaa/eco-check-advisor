@@ -99,11 +99,11 @@ function buildFallbackPlan(
     .map((e) => `Možete razmotriti nabavku: ${e.title}`);
   if (longerTerm.length === 0) longerTerm.push("Sledeći logičan korak je istraživanje pametnih uređaja za uštedu");
 
-  const phaseLabels = ["Faza 1 – Brze optimizacije", "Faza 2 – Tehnička unapređenja", "Faza 3 – Strukturne mere"];
+  const timeframeLabels = ["odmah", "1-2 nedelje", "1-3 meseca"];
   const steps = recommendations.slice(0, 3).map((r, i) => ({
     title: r.title,
     description: r.reasoning_bullets[0],
-    timeframe: phaseLabels[i] || phaseLabels[phaseLabels.length - 1],
+    timeframe: timeframeLabels[i] || timeframeLabels[timeframeLabels.length - 1],
   }));
 
   // Build reasoning summary from user inputs
@@ -320,6 +320,17 @@ serve(async (req) => {
     if (requestedStep === "generate_followups") {
       systemPrompt = `Ti si EcoCheck AI savetnik iz kompanije EcoSense Market. Specijalizovan si za održivost domaćinstva.
 
+DOZVOLJENI PROIZVODI (koristi ISKLJUČIVO ove nazive, bez izmena):
+- Pametna boca za vodu
+- Pametna kanta za reciklažu
+- Pametni LED sistem osvetljenja
+- Pametan senzor curenja vode
+- Pametan sistem za navodnjavanje
+- Pametni merač potrošnje struje
+- Pametni termostat
+
+NIKAD ne izmišljaj nove proizvode. Ako korisnik traži nešto što nije direktno pokriveno, izaberi NAJBLIŽI proizvod iz liste.
+
 PRAVILA:
 1. Odgovaraj ISKLJUČIVO na srpskom (latinica).
 2. Vraćaj ISKLJUČIVO validan JSON. Nikakav tekst, markdown ili objašnjenje izvan JSON objekta.
@@ -347,6 +358,17 @@ Vrati SAMO validan JSON.`;
     } else {
       systemPrompt = `Ti si EcoCheck AI savetnik iz kompanije EcoSense Market. Specijalizovan si za održivost domaćinstva.
 
+DOZVOLJENI PROIZVODI (koristi ISKLJUČIVO ove nazive, bez izmena):
+- Pametna boca za vodu
+- Pametna kanta za reciklažu
+- Pametni LED sistem osvetljenja
+- Pametan senzor curenja vode
+- Pametan sistem za navodnjavanje
+- Pametni merač potrošnje struje
+- Pametni termostat
+
+NIKAD ne izmišljaj nove proizvode. Ako korisnik traži nešto što nije direktno pokriveno, izaberi NAJBLIŽI proizvod iz liste.
+
 PRAVILA:
 1. Odgovaraj ISKLJUČIVO na srpskom (latinica).
 2. Vraćaj ISKLJUČIVO validan JSON. Nikakav tekst, markdown ili objašnjenje izvan JSON objekta.
@@ -355,7 +377,7 @@ PRAVILA:
 5. Ako evidencija nije dovoljna, postavi confidence na 0.3 ili niže i navedi u assumptions.
 6. Preporuči 3–5 akcija, rangirane po prioritetu.
 7. Svaka preporuka ima reasoning_bullets (3–5), assumptions, confidence (0–1).
-8. action_plan mora imati quick_wins i longer_term. Za polje "timeframe" u steps koristi fazni pristup prema nivou napora: "Faza 1 – Brze optimizacije", "Faza 2 – Tehnička unapređenja", "Faza 3 – Strukturne mere". NIKADA ne koristi vremenske oznake poput "Dan 1", "Nedelja 1", "Mesec 1" itd.
+8. action_plan mora imati quick_wins i longer_term. Za polje "timeframe" u steps koristi ISKLJUČIVO jednu od ovih vrednosti: "odmah", "1-2 nedelje", "1-3 meseca", "3-6 meseci". NIKADA ne koristi fazne oznake, vremenske oznake poput "Dan 1", "Nedelja 1" itd. Polje timeframe MORA biti string i NIKAD ne sme biti undefined.
 9. OBAVEZNO: "reasoning_summary" mora sadržati 2-3 rečenice analitičkog obrazloženja. Navedi najmanje 2 korisnikova odgovora i objasni logiku izbora preporuka. Koristi neutralan, savetodavni ton. ZABRANJENO: alarmistični izrazi ("hitna", "visoka verovatnoća", "direktno utiče"), apsolutne tvrdnje ("najveći trošak"), spekulacije o skrivenim problemima, dramatično ekološko uokviravanje. Umesto toga koristi formulacije poput "prema odgovorima", "jedan od značajnijih", "može se razmotriti".
 10. OBAVEZNO: Svaka preporuka mora imati "priority_reason" — jednu rečenicu koja počinje sa "Ova mera je relevantna jer…" Rečenica mora biti specifična za korisnikove odgovore, bez preterivanja i emocionalnog uokviravanja.
 11. DIFERENCIJACIJA: Rezultati MORAJU da se značajno razlikuju za Stan vs Kuća, Dvorište Da vs Ne, Struja vs Voda. Ako korisnik nema dvorište, NIKADA ne preporučuj navodnjavanje. Ako je stan, izbegavaj spoljne instalacije. Scenario sa strujom ne sme pominjati logiku vezanu za vodu i obrnuto.
