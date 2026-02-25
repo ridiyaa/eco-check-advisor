@@ -128,7 +128,7 @@ const Index = () => {
             <h1 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight">
               EcoCheck – Pametna preporuka za održiv dom
             </h1>
-            <p className="text-lg opacity-90 max-w-xl mx-auto">
+            <p className="text-lg opacity-90 mx-auto">
               Odgovorite na nekoliko pitanja i dobijte personalizovan plan za smanjenje potrošnje energije i vode u vašem domu.
             </p>
           </div>
