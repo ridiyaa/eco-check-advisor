@@ -114,7 +114,9 @@ const Index = () => {
     if (name.includes("termostat")) return <Zap className="h-5 w-5" />;
     if (name.includes("merač") || name.includes("LED")) return <Lightbulb className="h-5 w-5" />;
     if (name.includes("navodnjavanje")) return <TreePine className="h-5 w-5" />;
-    if (name.includes("curenja") || name.includes("Senzor")) return <Droplets className="h-5 w-5" />;
+    if (name.includes("curenja") || name.includes("senzor")) return <Droplets className="h-5 w-5" />;
+    if (name.includes("boca")) return <Droplets className="h-5 w-5" />;
+    if (name.includes("kanta") || name.includes("reciklaž")) return <Leaf className="h-5 w-5" />;
     return <Leaf className="h-5 w-5" />;
   };
 

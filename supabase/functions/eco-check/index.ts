@@ -58,19 +58,31 @@ interface Recommendation {
   priority_level: string;
 }
 
+const CANONICAL_PRODUCTS = [
+  "Pametna boca za vodu",
+  "Pametna kanta za reciklažu",
+  "Pametni LED sistem osvetljenja",
+  "Pametan senzor curenja vode",
+  "Pametan sistem za navodnjavanje",
+  "Pametni merač potrošnje struje",
+  "Pametni termostat",
+];
+
 function buildFallbackContent(answers: QuestionnaireAnswers): string {
   const products: { name: string; why: string; impact: string; priority: string; forCost: string[]; forGoal: string[] }[] = [
     { name: "Pametni termostat", why: "Kontrola grejanja smanjuje potrošnju energije.", impact: "Ušteda do 15% na grejanju.", priority: "Visok", forCost: ["Struja", "Oboje"], forGoal: ["Smanjenje računa", "Sve navedeno", "Ekološka odgovornost"] },
     { name: "Pametni merač potrošnje struje", why: "Praćenje potrošnje pomaže u identifikaciji rasipanja.", impact: "Uvid u realnu potrošnju, ušteda 5–10%.", priority: "Srednji", forCost: ["Struja", "Oboje"], forGoal: ["Smanjenje računa", "Sve navedeno", "Ekološka odgovornost"] },
-    { name: "Pametni LED sistem", why: "LED rasveta troši do 80% manje energije.", impact: "Značajno smanjenje računa za struju.", priority: "Srednji", forCost: ["Struja", "Oboje"], forGoal: ["Smanjenje računa", "Ekološka odgovornost", "Sve navedeno"] },
-    { name: "Pametni sistem za navodnjavanje", why: "Automatsko navodnjavanje štedi vodu i vreme.", impact: "Ušteda do 40% vode za baštu.", priority: "Visok", forCost: ["Voda", "Oboje"], forGoal: ["Smanjenje računa", "Ekološka odgovornost", "Sve navedeno"] },
-    { name: "Senzor curenja vode", why: "Rano otkrivanje curenja sprečava skupu štetu.", impact: "Prevencija velikih kvarova i popravki.", priority: "Visok", forCost: ["Voda", "Oboje"], forGoal: ["Sprečavanje kvarova i štete", "Sve navedeno"] },
+    { name: "Pametni LED sistem osvetljenja", why: "LED rasveta troši do 80% manje energije.", impact: "Značajno smanjenje računa za struju.", priority: "Srednji", forCost: ["Struja", "Oboje"], forGoal: ["Smanjenje računa", "Ekološka odgovornost", "Sve navedeno"] },
+    { name: "Pametan sistem za navodnjavanje", why: "Automatsko navodnjavanje štedi vodu i vreme.", impact: "Ušteda do 40% vode za baštu.", priority: "Visok", forCost: ["Voda", "Oboje"], forGoal: ["Smanjenje računa", "Ekološka odgovornost", "Sve navedeno"] },
+    { name: "Pametan senzor curenja vode", why: "Rano otkrivanje curenja sprečava skupu štetu.", impact: "Prevencija velikih kvarova i popravki.", priority: "Visok", forCost: ["Voda", "Oboje"], forGoal: ["Sprečavanje kvarova i štete", "Sve navedeno"] },
+    { name: "Pametna boca za vodu", why: "Smanjuje upotrebu jednokratne plastike.", impact: "Smanjenje plastičnog otpada do 80%.", priority: "Nizak", forCost: ["Voda", "Oboje"], forGoal: ["Ekološka odgovornost", "Sve navedeno"] },
+    { name: "Pametna kanta za reciklažu", why: "Pomaže u pravilnom sortiranju otpada.", impact: "Smanjenje mešanog otpada za 40–60%.", priority: "Srednji", forCost: ["Struja", "Voda", "Oboje"], forGoal: ["Ekološka odgovornost", "Sve navedeno"] },
   ];
 
   // Filter out irrigation if no yard
   let candidates = products;
   if (answers.dvoriste === "Ne") {
-    candidates = candidates.filter(p => p.name !== "Pametni sistem za navodnjavanje");
+    candidates = candidates.filter(p => p.name !== "Pametan sistem za navodnjavanje");
   }
 
   // Score each product by relevance
@@ -78,8 +90,8 @@ function buildFallbackContent(answers: QuestionnaireAnswers): string {
     let score = 0;
     if (p.forCost.includes(answers.najveci_trosak)) score += 2;
     if (p.forGoal.includes(answers.glavni_cilj)) score += 2;
-    if (answers.glavni_cilj === "Sprečavanje kvarova i štete" && p.name === "Senzor curenja vode") score += 3;
-    if (answers.tip_objekta === "Kuća" && answers.dvoriste === "Da" && p.name === "Pametni sistem za navodnjavanje") score += 2;
+    if (answers.glavni_cilj === "Sprečavanje kvarova i štete" && p.name === "Pametan senzor curenja vode") score += 3;
+    if (answers.tip_objekta === "Kuća" && answers.dvoriste === "Da" && p.name === "Pametan sistem za navodnjavanje") score += 2;
     return { ...p, score };
   });
 
@@ -141,20 +153,24 @@ serve(async (req) => {
     
 You MUST return ONLY valid JSON. No text, no markdown, no explanation outside the JSON object. Do not wrap in code blocks.
 
-You can ONLY recommend from these 5 products (use exact names):
-- Pametni termostat
+You can ONLY recommend from these 7 products (use EXACT names, no changes):
+- Pametna boca za vodu
+- Pametna kanta za reciklažu
+- Pametni LED sistem osvetljenja
+- Pametan senzor curenja vode
+- Pametan sistem za navodnjavanje
 - Pametni merač potrošnje struje
-- Pametni LED sistem
-- Pametni sistem za navodnjavanje
-- Senzor curenja vode
+- Pametni termostat
 
 Maximum 3 product recommendations.
 
 Rules:
+- NEVER invent new products. If the user needs something not directly covered, pick the CLOSEST product from the list.
 - If "Oboje" (electricity + water) → recommend combination of energy and water products
-- If "Kuća" + "Da" (dvorište) → strongly consider "Pametni sistem za navodnjavanje"
-- If "Sprečavanje kvarova i štete" → prioritize "Senzor curenja vode"
+- If "Kuća" + "Da" (dvorište) → strongly consider "Pametan sistem za navodnjavanje"
+- If "Sprečavanje kvarova i štete" → prioritize "Pametan senzor curenja vode"
 - If electricity dominant → prioritize "Pametni termostat" and "Pametni merač potrošnje struje"
+- action_plan.steps[].timeframe MUST be a string. Allowed values: "odmah", "1-2 nedelje", "1-3 meseca", "3-6 meseci"
 
 Return this exact JSON schema:
 {

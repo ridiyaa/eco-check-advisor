@@ -22,8 +22,10 @@ function getProductIcon(name: string) {
   const lower = name.toLowerCase();
   if (lower.includes("termostat")) return <Zap className="h-5 w-5" />;
   if (lower.includes("merač") || lower.includes("led") || lower.includes("utikač")) return <Lightbulb className="h-5 w-5" />;
-  if (lower.includes("navodnjavanje") || lower.includes("solar")) return <TreePine className="h-5 w-5" />;
+  if (lower.includes("navodnjavanje")) return <TreePine className="h-5 w-5" />;
   if (lower.includes("curenja") || lower.includes("senzor") || lower.includes("vod")) return <Droplets className="h-5 w-5" />;
+  if (lower.includes("boca")) return <Droplets className="h-5 w-5" />;
+  if (lower.includes("kanta") || lower.includes("reciklaž")) return <Leaf className="h-5 w-5" />;
   return <Leaf className="h-5 w-5" />;
 }
 
