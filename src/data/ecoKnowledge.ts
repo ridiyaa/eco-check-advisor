@@ -70,7 +70,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "water",
     prerequisites: [],
     impact_range: "Sprečava štetu od 50.000–500.000 RSD",
-    cost_range: "3.000–7.000 RSD",
+    cost_range: "5.990 RSD",
     short_description: "Detektuje curenje vode i šalje upozorenje. Sprečava poplave i oštećenja u domu.",
     keywords: ["curenje", "voda", "senzor", "poplava", "šteta", "prevencija", "zaštita"],
   },
