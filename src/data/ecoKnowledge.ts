@@ -30,7 +30,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "energy",
     prerequisites: ["centralno grejanje ili klima uređaj"],
     impact_range: "15–25% ušteda na grejanju/hlađenju",
-    cost_range: "8.000–15.000 RSD",
+    cost_range: "12.990 RSD",
     short_description: "Automatski reguliše temperaturu prema rasporedu i navikama. Smanjuje račun za grejanje bez gubitka komfora.",
     keywords: ["grejanje", "hlađenje", "termostat", "struja", "temperatura", "klima", "energija", "ušteda"],
   },
