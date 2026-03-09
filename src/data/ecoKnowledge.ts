@@ -60,7 +60,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "water",
     prerequisites: ["dvorište ili bašta"],
     impact_range: "30–50% ušteda vode za zalivanje",
-    cost_range: "10.000–25.000 RSD",
+    cost_range: "10.999 RSD",
     short_description: "Automatski zalivanje na osnovu vlažnosti zemljišta i vremenske prognoze. Sprečava prekomerno zalivanje.",
     keywords: ["navodnjavanje", "bašta", "dvorište", "voda", "zalivanje", "vlažnost", "zemlja"],
   },
