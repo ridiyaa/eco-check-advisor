@@ -117,7 +117,11 @@ export function AdvisorResults({ result, ecoScore, onRegenerate, isRegenerating 
                   <div className="flex flex-wrap gap-2 text-sm">
                     <Badge variant="secondary">{rec.impact_range}</Badge>
                     <Badge variant="secondary">{rec.effort_level}</Badge>
-                    <Badge variant="secondary">{rec.cost_range}</Badge>
+                    {matchedProduct && PRODUCT_PRICE_MAP[matchedProduct] ? (
+                      <Badge variant="secondary" className="font-semibold">{PRODUCT_PRICE_MAP[matchedProduct]}</Badge>
+                    ) : (
+                      <Badge variant="secondary">{rec.cost_range}</Badge>
+                    )}
                   </div>
 
                   {rec.priority_reason && (

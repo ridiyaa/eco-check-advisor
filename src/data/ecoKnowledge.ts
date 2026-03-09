@@ -90,7 +90,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "waste",
     prerequisites: [],
     impact_range: "Smanjenje mešanog otpada za 40–60%",
-    cost_range: "5.000–12.000 RSD",
+    cost_range: "7.990 RSD",
     short_description: "Automatski sortira otpad po kategorijama. Pomaže u pravilnoj reciklaži i smanjenju otpada.",
     keywords: ["reciklaža", "otpad", "kanta", "sortiranje", "ekologija", "smeće"],
   },
