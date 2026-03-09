@@ -41,13 +41,13 @@ export function computeEcoScore(answers: QuestionnaireAnswers): number {
 }
 
 export const PRODUCT_URL_MAP: Record<string, string> = {
-  "Pametni termostat": "https://ecosense-market.rs/product/termostat",
-  "Pametni merač potrošnje struje": "https://ecosense-market.rs/product/merac-struje",
-  "Pametni LED sistem osvetljenja": "https://ecosense-market.rs/product/led-sistem",
-  "Pametan sistem za navodnjavanje": "https://ecosense-market.rs/product/navodnjavanje",
-  "Pametan senzor curenja vode": "https://ecosense-market.rs/product/senzor-curenja",
-  "Pametna boca za vodu": "https://ecosense-market.rs/product/boca-za-vodu",
-  "Pametna kanta za reciklažu": "https://ecosense-market.rs/product/kanta-za-reciklazu",
+  "Pametni termostat": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametni-termostat/",
+  "Pametni merač potrošnje struje": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametni-merac-potrosnje-struje/",
+  "Pametni LED sistem osvetljenja": "https://forestgreen-gerbil-565708.hostingersite.com/product/led-sistem/",
+  "Pametan sistem za navodnjavanje": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametan-sistem-za-navodnjavanje/",
+  "Pametan senzor curenja vode": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametan-senzor-curenja-vode/",
+  "Pametna boca za vodu": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametna-boca-za-vodu/",
+  "Pametna kanta za reciklažu": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametna-kanta-za-reciklazu/",
 };
 
 export interface Recommendation {
