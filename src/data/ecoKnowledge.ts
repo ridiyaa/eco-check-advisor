@@ -80,7 +80,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "water",
     prerequisites: [],
     impact_range: "Smanjenje korišćenja plastičnih flaša za 80–100%",
-    cost_range: "3.000–6.000 RSD",
+    cost_range: "4.990 RSD",
     short_description: "Prati dnevni unos vode i podseća na hidrataciju. Smanjuje upotrebu jednokratne plastike.",
     keywords: ["boca", "voda", "plastika", "hidratacija", "zdravlje", "ekologija"],
   },
