@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { SimulateImprovements } from "./SimulateImprovements";
-import { PRODUCT_URL_MAP } from "@/lib/eco-score";
+import { PRODUCT_URL_MAP, PRODUCT_PRICE_MAP } from "@/lib/eco-score";
 import type { AdvisorResponse } from "@/lib/advisorSchema";
 import { allKnowledge } from "@/data/ecoKnowledge";
 
@@ -117,7 +117,11 @@ export function AdvisorResults({ result, ecoScore, onRegenerate, isRegenerating 
                   <div className="flex flex-wrap gap-2 text-sm">
                     <Badge variant="secondary">{rec.impact_range}</Badge>
                     <Badge variant="secondary">{rec.effort_level}</Badge>
-                    <Badge variant="secondary">{rec.cost_range}</Badge>
+                    {matchedProduct && PRODUCT_PRICE_MAP[matchedProduct] ? (
+                      <Badge variant="secondary" className="font-semibold">{PRODUCT_PRICE_MAP[matchedProduct]}</Badge>
+                    ) : (
+                      <Badge variant="secondary">{rec.cost_range}</Badge>
+                    )}
                   </div>
 
                   {rec.priority_reason && (

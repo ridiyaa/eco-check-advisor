@@ -50,6 +50,16 @@ export const PRODUCT_URL_MAP: Record<string, string> = {
   "Pametna kanta za reciklažu": "https://forestgreen-gerbil-565708.hostingersite.com/product/pametna-kanta-za-reciklazu/",
 };
 
+export const PRODUCT_PRICE_MAP: Record<string, string> = {
+  "Pametna boca za vodu": "4.990 RSD",
+  "Pametna kanta za reciklažu": "7.990 RSD",
+  "Pametni LED sistem osvetljenja": "9.900 RSD",
+  "Pametan senzor curenja vode": "5.990 RSD",
+  "Pametan sistem za navodnjavanje": "10.999 RSD",
+  "Pametni merač potrošnje struje": "14.999 RSD",
+  "Pametni termostat": "12.990 RSD",
+};
+
 export interface Recommendation {
   product_name: string;
   why: string;
