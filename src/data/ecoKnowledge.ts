@@ -40,7 +40,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "energy",
     prerequisites: [],
     impact_range: "10–20% ušteda identifikovanjem rasipanja",
-    cost_range: "5.000–10.000 RSD",
+    cost_range: "14.999 RSD",
     short_description: "Prati potrošnju struje u realnom vremenu. Identifikuje uređaje koji troše najviše i pomaže u optimizaciji.",
     keywords: ["struja", "merač", "potrošnja", "monitoring", "račun", "energija", "ušteda", "uređaji"],
   },
