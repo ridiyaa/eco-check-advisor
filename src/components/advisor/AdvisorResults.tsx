@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { SimulateImprovements } from "./SimulateImprovements";
-import { PRODUCT_URL_MAP } from "@/lib/eco-score";
+import { PRODUCT_URL_MAP, PRODUCT_PRICE_MAP } from "@/lib/eco-score";
 import type { AdvisorResponse } from "@/lib/advisorSchema";
 import { allKnowledge } from "@/data/ecoKnowledge";
 
