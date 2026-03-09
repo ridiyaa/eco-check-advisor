@@ -50,7 +50,7 @@ export const ecoProducts: EcoProduct[] = [
     category: "energy",
     prerequisites: [],
     impact_range: "40–60% ušteda na osvetljenju",
-    cost_range: "3.000–8.000 RSD",
+    cost_range: "9.900 RSD",
     short_description: "LED sijalice sa daljinskim upravljanjem i automatizacijom. Smanjuju potrošnju osvetljenja i produžavaju vek trajanja.",
     keywords: ["led", "sijalice", "osvetljenje", "struja", "svetlo", "automatizacija", "energija"],
   },
